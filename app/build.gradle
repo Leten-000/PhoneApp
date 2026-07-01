@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application'
 }
 
+def jarvisVersionCode = (project.findProperty('jarvisVersionCode') ?: '1').toString().toInteger()
+
 android {
     namespace 'pl.jarvis'
     compileSdk 35
@@ -10,7 +12,7 @@ android {
         applicationId 'pl.jarvis'
         minSdk 23
         targetSdk 35
-        versionCode (project.findProperty('versionCode') ?: '1').toInteger()
+        versionCode jarvisVersionCode
         versionName '0.1.0'
     }
 }

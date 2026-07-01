@@ -33,7 +33,7 @@ jobs:
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
 
       - name: Build debug APK
-        run: gradle :app:assembleDebug -PversionCode=${{ github.run_number }}
+        run: gradle :app:assembleDebug -PjarvisVersionCode=${{ github.run_number }}
 
       - name: Prepare phone download file
         run: |
