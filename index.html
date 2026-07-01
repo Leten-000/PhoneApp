@@ -17,12 +17,10 @@
         <h1 id="app-title">Co mam zrobić?</h1>
         <form id="command-form" class="command-form">
           <label class="sr-only" for="command">Polecenie dla Jarvisa</label>
-          <textarea id="command" name="command" rows="3" placeholder="np. nastaw alarm na 7:30"></textarea>
+          <textarea id="command" name="command" rows="3" placeholder="Wpisz polecenie dla Jarvisa"></textarea>
           <button type="submit">Wykonaj</button>
         </form>
-        <p id="status" class="hint">
-          Wpisz polecenie, np. „minutnik za 10 minut” albo „za 30 minut włącz stoper”.
-        </p>
+        <p id="status" class="hint" aria-live="polite"></p>
       </section>
     </main>
     <script>
@@ -41,12 +39,12 @@
         }
 
         if (normalized.includes('alarm')) {
-          status.textContent = 'W aplikacji Android Jarvis otworzy ustawianie alarmu dla: „' + text + '”.';
+          status.textContent = 'Gotowe — Jarvis ustawi alarm dla: „' + text + '”.';
           return;
         }
 
         if (normalized.includes('minutnik') || normalized.includes('timer') || normalized.includes('stoper')) {
-          status.textContent = 'W aplikacji Android Jarvis otworzy minutnik dla: „' + text + '”.';
+          status.textContent = 'Gotowe — Jarvis ustawi minutnik dla: „' + text + '”.';
           return;
         }
 

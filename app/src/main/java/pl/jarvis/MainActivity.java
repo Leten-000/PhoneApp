@@ -8,6 +8,7 @@ import android.content.pm.PackageInfo;
 import android.net.Uri;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
@@ -58,15 +59,20 @@ public class MainActivity extends Activity {
         prompt.setPadding(0, 24, 0, 18);
 
         commandInput = new EditText(this);
-        commandInput.setHint("np. nastaw alarm na 7:30");
+        commandInput.setHint("Wpisz polecenie dla Jarvisa");
         commandInput.setSingleLine(false);
         commandInput.setMinLines(2);
-        commandInput.setTextColor(Color.rgb(15, 23, 42));
-        commandInput.setHintTextColor(Color.rgb(100, 116, 139));
+        commandInput.setTextColor(Color.WHITE);
+        commandInput.setHintTextColor(Color.rgb(148, 163, 184));
         commandInput.setTextSize(18);
         commandInput.setImeOptions(EditorInfo.IME_ACTION_DONE);
         commandInput.setGravity(Gravity.CENTER_VERTICAL);
         commandInput.setPadding(28, 18, 28, 18);
+        GradientDrawable inputBackground = new GradientDrawable();
+        inputBackground.setColor(Color.rgb(15, 23, 42));
+        inputBackground.setCornerRadius(24);
+        inputBackground.setStroke(2, Color.rgb(56, 189, 248));
+        commandInput.setBackground(inputBackground);
 
         Button runButton = new Button(this);
         runButton.setText("Wykonaj");
@@ -79,7 +85,7 @@ public class MainActivity extends Activity {
         updateButton.setTextSize(16);
 
         status = new TextView(this);
-        status.setText("Wpisz polecenie, np. „minutnik za 10 minut” albo „za 30 minut włącz stoper”.");
+        status.setText("");
         status.setTextColor(Color.rgb(203, 213, 225));
         status.setTextSize(16);
         status.setGravity(Gravity.CENTER);
@@ -243,9 +249,9 @@ public class MainActivity extends Activity {
             .putExtra(AlarmClock.EXTRA_HOUR, hour)
             .putExtra(AlarmClock.EXTRA_MINUTES, minute)
             .putExtra(AlarmClock.EXTRA_MESSAGE, originalCommand)
-            .putExtra(AlarmClock.EXTRA_SKIP_UI, false);
+            .putExtra(AlarmClock.EXTRA_SKIP_UI, true);
         startActivity(intent);
-        status.setText(String.format(Locale.ROOT, "Otwieram ustawienie alarmu na %02d:%02d.", hour, minute));
+        status.setText(String.format(Locale.ROOT, "Gotowe — ustawiłem alarm na %02d:%02d.", hour, minute));
         return true;
     }
 
@@ -260,9 +266,9 @@ public class MainActivity extends Activity {
         Intent intent = new Intent(AlarmClock.ACTION_SET_TIMER)
             .putExtra(AlarmClock.EXTRA_LENGTH, seconds)
             .putExtra(AlarmClock.EXTRA_MESSAGE, originalCommand)
-            .putExtra(AlarmClock.EXTRA_SKIP_UI, false);
+            .putExtra(AlarmClock.EXTRA_SKIP_UI, true);
         startActivity(intent);
-        status.setText("Otwieram minutnik dla polecenia: „" + originalCommand + "”.");
+        status.setText("Gotowe — ustawiłem minutnik dla polecenia: „" + originalCommand + "”.");
         return true;
     }
 
