@@ -20,7 +20,7 @@ Po instalacji na ekranie telefonu pojawi się aplikacja **Jarvis** z polem do wp
 
 ## Automatyczne aktualizacje
 
-Android nie aktualizuje automatycznie ręcznie instalowanych plików APK bez sklepu lub systemu dystrybucji. Ten projekt przygotowuje jednak nowy plik APK automatycznie po każdej zmianie w repozytorium, więc aktualizacja polega tylko na pobraniu najnowszego artefaktu **Jarvis-apk** i zainstalowaniu go na telefonie.
+Po każdym pushu na GitHub workflow buduje nowy plik `Jarvis.apk` i publikuje go jako release `jarvis-latest`. Po uruchomieniu aplikacja sprawdza przez internet, czy w tym release jest nowszy `versionCode`; jeśli tak, otwiera stronę pobierania najnowszego APK. Android nadal wymaga potwierdzenia instalacji APK przez użytkownika, ale Jarvis sam wykrywa dostępność aktualizacji. Gdy nie ma internetu, aplikacja działa dalej w ostatnio zainstalowanej wersji.
 
 ## Budowanie lokalne
 

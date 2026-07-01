@@ -43,4 +43,4 @@ za 30 minut włącz stoper
 
 ## 4. Jak aktualizować później
 
-Po kolejnej zmianie aplikacji wejdź ponownie w **Actions → Build Jarvis APK**, pobierz najnowszy artefakt **Jarvis-apk** i zainstaluj nowy plik `Jarvis.apk` na telefonie.
+Po kolejnej zmianie kodu GitHub zbuduje i opublikuje najnowszy plik `Jarvis.apk` w release `jarvis-latest`. Jarvis przy starcie sprawdzi internetem, czy ta wersja jest nowsza, i otworzy stronę pobierania. Bez internetu uruchomi się normalnie ostatnia zainstalowana wersja.
