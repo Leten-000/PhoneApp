@@ -1,9 +1,15 @@
-const CACHE_NAME = 'jarvis-cache-v1';
-const CORE_ASSETS = ['/', '/manifest.webmanifest', '/icon.svg'];
+const CACHE_NAME = 'jarvis-cache-v2';
+const CORE_ASSETS = ['.', 'index.html', 'manifest.webmanifest', 'icon.svg', 'styles.css'];
+
+const toScopeUrl = (assetPath) => new URL(assetPath, self.registration.scope).toString();
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS)));
+  event.waitUntil(
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(CORE_ASSETS.map(toScopeUrl))),
+  );
 });
 
 self.addEventListener('activate', (event) => {
@@ -33,6 +39,6 @@ self.addEventListener('fetch', (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
         return response;
       })
-      .catch(() => caches.match(event.request).then((cachedResponse) => cachedResponse || caches.match('/'))),
+      .catch(() => caches.match(event.request).then((cachedResponse) => cachedResponse || caches.match(toScopeUrl('index.html')))),
   );
 });
