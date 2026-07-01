@@ -39,8 +39,7 @@ jobs:
         run: |
           mkdir -p dist-apk
           cp app/build/outputs/apk/debug/app-debug.apk dist-apk/Jarvis.apk
-          printf '{"versionCode":%s,"apk":"Jarvis.apk"}
-' '${{ github.run_number }}' > dist-apk/version.json
+          printf '{"versionCode":%s,"apk":"Jarvis.apk"}\n' '${{ github.run_number }}' > dist-apk/version.json
 
       - name: Publish latest APK release
         env:
