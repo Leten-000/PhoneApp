@@ -35,8 +35,13 @@ jobs:
       - name: Build debug APK
         run: gradle :app:assembleDebug
 
+      - name: Prepare phone download file
+        run: |
+          mkdir -p dist-apk
+          cp app/build/outputs/apk/debug/app-debug.apk dist-apk/Jarvis.apk
+
       - name: Upload APK to download on phone
         uses: actions/upload-artifact@v4
         with:
-          name: Jarvis-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: Jarvis-apk
+          path: dist-apk/Jarvis.apk

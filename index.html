@@ -14,14 +14,45 @@
     <main class="app-shell" aria-labelledby="app-title">
       <section class="card">
         <p class="eyebrow">Jarvis</p>
-        <h1 id="app-title">aplikacja działa</h1>
-        <p class="hint">
-          Dodaj tę stronę do ekranu głównego telefonu, aby korzystać z niej jak z aplikacji.
-          Po wdrożeniu nowych wersji przeglądarka sama pobierze aktualizacje.
+        <h1 id="app-title">Co mam zrobić?</h1>
+        <form id="command-form" class="command-form">
+          <label class="sr-only" for="command">Polecenie dla Jarvisa</label>
+          <textarea id="command" name="command" rows="3" placeholder="np. nastaw alarm na 7:30"></textarea>
+          <button type="submit">Wykonaj</button>
+        </form>
+        <p id="status" class="hint">
+          Wpisz polecenie, np. „minutnik za 10 minut” albo „za 30 minut włącz stoper”.
         </p>
       </section>
     </main>
     <script>
+      const form = document.querySelector('#command-form');
+      const command = document.querySelector('#command');
+      const status = document.querySelector('#status');
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const text = command.value.trim();
+        const normalized = text.toLowerCase();
+
+        if (!text) {
+          status.textContent = 'Najpierw wpisz, co Jarvis ma zrobić.';
+          return;
+        }
+
+        if (normalized.includes('alarm')) {
+          status.textContent = 'W aplikacji Android Jarvis otworzy ustawianie alarmu dla: „' + text + '”.';
+          return;
+        }
+
+        if (normalized.includes('minutnik') || normalized.includes('timer') || normalized.includes('stoper')) {
+          status.textContent = 'W aplikacji Android Jarvis otworzy minutnik dla: „' + text + '”.';
+          return;
+        }
+
+        status.textContent = 'Nie rozumiem jeszcze tego polecenia. Spróbuj: „nastaw alarm na 7:30”, „minutnik za 10 minut” albo „za 30 minut włącz stoper”.';
+      });
+
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('service-worker.js');

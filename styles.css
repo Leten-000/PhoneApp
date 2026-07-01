@@ -56,6 +56,53 @@ h1 {
   margin: 0;
 }
 
+.command-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+
+textarea {
+  background: #f8fafc;
+  border: 0;
+  border-radius: 1rem;
+  color: #0f172a;
+  font: inherit;
+  min-height: 7rem;
+  padding: 1rem;
+  resize: vertical;
+  width: 100%;
+}
+
+button {
+  background: #38bdf8;
+  border: 0;
+  border-radius: 999px;
+  color: #082f49;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  padding: 1rem 1.25rem;
+}
+
+button:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid #bae6fd;
+  outline-offset: 3px;
+}
+
+.sr-only {
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 .hint {
   color: #cbd5e1;
   font-size: 1rem;
