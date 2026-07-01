@@ -1,0 +1,11 @@
+{
+  "name": "jarvis-phone-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimalna aplikacja PWA Jarvis na telefon.",
+  "scripts": {
+    "start": "python3 -m http.server 4173",
+    "build": "mkdir -p dist && cp -R index.html manifest.webmanifest icon.svg service-worker.js styles.css dist/",
+    "preview": "python3 -m http.server 4173 --directory dist"
+  }
+}
