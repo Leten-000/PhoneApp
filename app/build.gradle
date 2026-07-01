@@ -1,0 +1,18 @@
+plugins {
+    id 'com.android.application'
+}
+
+def jarvisVersionCode = (project.findProperty('jarvisVersionCode') ?: '1').toString().toInteger()
+
+android {
+    namespace 'pl.jarvis'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'pl.jarvis'
+        minSdk 23
+        targetSdk 35
+        versionCode jarvisVersionCode
+        versionName '0.1.0'
+    }
+}

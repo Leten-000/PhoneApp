@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="description" content="Jarvis - prywatna aplikacja na telefon." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Jarvis</title>
+  </head>
+  <body>
+    <main class="app-shell" aria-labelledby="app-title">
+      <section class="card">
+        <p class="eyebrow">Jarvis</p>
+        <h1 id="app-title">Co mam zrobić?</h1>
+        <form id="command-form" class="command-form">
+          <label class="sr-only" for="command">Polecenie dla Jarvisa</label>
+          <textarea id="command" name="command" rows="3" placeholder="Wpisz polecenie dla Jarvisa"></textarea>
+          <button type="submit">Wykonaj</button>
+        </form>
+        <p id="status" class="hint" aria-live="polite"></p>
+      </section>
+    </main>
+    <script>
+      const form = document.querySelector('#command-form');
+      const command = document.querySelector('#command');
+      const status = document.querySelector('#status');
+
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const text = command.value.trim();
+        const normalized = text.toLowerCase();
+
+        if (!text) {
+          status.textContent = 'Najpierw wpisz, co Jarvis ma zrobić.';
+          return;
+        }
+
+        if (normalized.includes('alarm')) {
+          status.textContent = 'Gotowe — Jarvis ustawi alarm dla: „' + text + '”.';
+          return;
+        }
+
+        if (normalized.includes('minutnik') || normalized.includes('timer') || normalized.includes('stoper')) {
+          status.textContent = 'Gotowe — Jarvis ustawi minutnik dla: „' + text + '”.';
+          return;
+        }
+
+        status.textContent = 'Nie rozumiem jeszcze tego polecenia. Spróbuj: „nastaw alarm na 7:30”, „minutnik za 10 minut” albo „za 30 minut włącz stoper”.';
+      });
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('service-worker.js');
+        });
+      }
+    </script>
+  </body>
+</html>
