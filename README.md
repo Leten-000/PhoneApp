@@ -1,36 +1,39 @@
 # Jarvis
 
-Jarvis to minimalna prywatna aplikacja PWA na telefon. Po uruchomieniu pokazuje komunikat:
+Jarvis to minimalna prywatna aplikacja na Androida. Po uruchomieniu pokazuje komunikat:
 
 > aplikacja działa
 
-## Link na telefon bez komputera
+## Plik aplikacji do pobrania na telefon
 
-Po włączeniu GitHub Pages dla tego repozytorium aplikacja będzie dostępna jako zwykły link:
+Nie używamy już GitHub Pages, bo dla prywatnych repozytoriów może wymagać płatnego planu i link z placeholderem nie działał bez podstawienia prawdziwego loginu oraz nazwy repozytorium.
+
+Zamiast tego repozytorium buduje zwykły plik APK:
+
+1. Wejdź na GitHubie w zakładkę **Actions**.
+2. Otwórz najnowszy workflow **Build Jarvis APK**.
+3. Pobierz artefakt **Jarvis-debug-apk**.
+4. Rozpakuj paczkę na telefonie i uruchom plik `app-debug.apk`.
+5. Jeśli Android zapyta o zgodę, pozwól przeglądarce lub menedżerowi plików instalować aplikacje spoza sklepu.
+
+Po instalacji na ekranie telefonu pojawi się aplikacja **Jarvis**.
+
+## Automatyczne aktualizacje
+
+Android nie aktualizuje automatycznie ręcznie instalowanych plików APK bez sklepu lub systemu dystrybucji. Ten projekt przygotowuje jednak nowy plik APK automatycznie po każdej zmianie w repozytorium, więc aktualizacja polega tylko na pobraniu najnowszego artefaktu **Jarvis-debug-apk** i zainstalowaniu go na telefonie.
+
+## Budowanie lokalne
+
+```bash
+gradle :app:assembleDebug
+```
+
+Gotowy plik powstaje tutaj:
 
 ```text
-https://<twoj-login-github>.github.io/<nazwa-repozytorium>/
+app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Na telefonie otwórz ten link w przeglądarce, a następnie wybierz opcję dodania strony do ekranu głównego. Od tej chwili Jarvis będzie uruchamiał się jak aplikacja.
+## Wersja PWA
 
-Workflow `.github/workflows/pages.yml` publikuje aplikację automatycznie po każdym pushu i dodatkowo zapisuje paczkę `jarvis-pwa-files` w zakładce Actions, jeśli potrzebujesz plików do pobrania.
-
-## Dlaczego PWA?
-
-PWA można dodać do ekranu głównego telefonu bez publikowania w sklepie. Po wdrożeniu nowej wersji na serwerze telefon automatycznie pobierze aktualizację przez przeglądarkę i service workera, bez ręcznego instalowania plików APK/IPA.
-
-## Uruchomienie lokalne
-
-```bash
-npm run start
-```
-
-Następnie otwórz adres `http://localhost:4173` na komputerze albo adres IP komputera w tej samej sieci na telefonie.
-
-## Wersja produkcyjna
-
-```bash
-npm run build
-npm run preview
-```
+W repozytorium nadal zostają proste pliki PWA (`index.html`, `manifest.webmanifest`, `service-worker.js`). Można ich użyć później, jeśli aplikacja będzie hostowana pod publicznym linkiem.
