@@ -2,11 +2,13 @@ package pl.jarvis;
 
 import android.app.Activity;
 import android.app.DownloadManager;
+import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.provider.AlarmClock;
+import android.provider.CalendarContract;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
@@ -27,6 +29,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Calendar;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -342,7 +345,117 @@ public class MainActivity extends Activity {
             }
         }
 
-        status.setText("Nie rozumiem jeszcze tego polecenia. Spróbuj: „nastaw alarm na 7:30”, „minutnik za 10 minut” albo „za 30 minut włącz stoper”.");
+        if (containsCalendarRequest(normalized)) {
+            if (tryAddCalendarEvent(command, normalized)) {
+                return;
+            }
+        }
+
+        status.setText("Nie rozumiem jeszcze tego polecenia. Spróbuj: „nastaw alarm na 7:30”, „minutnik za 10 minut”, „dodaj wydarzenie jutro o 15:00” albo „dodaj zadanie w kalendarzu na 12.07 o 9:00”.");
+    }
+
+    private boolean containsCalendarRequest(String normalizedCommand) {
+        return normalizedCommand.contains("kalendarz")
+            || normalizedCommand.contains("wydarzenie")
+            || normalizedCommand.contains("spotkanie")
+            || normalizedCommand.contains("zadanie")
+            || normalizedCommand.contains("przypomnienie");
+    }
+
+    private boolean tryAddCalendarEvent(String originalCommand, String normalizedCommand) {
+        Calendar startTime = extractCalendarStartTime(normalizedCommand);
+
+        if (startTime == null) {
+            status.setText("Podaj datę i godzinę, np. „dodaj wydarzenie jutro o 15:00” albo „dodaj zadanie w kalendarzu na 12.07 o 9:00”.");
+            return true;
+        }
+
+        Calendar endTime = (Calendar) startTime.clone();
+        endTime.add(Calendar.HOUR_OF_DAY, 1);
+
+        Intent intent = new Intent(Intent.ACTION_INSERT)
+            .setData(CalendarContract.Events.CONTENT_URI)
+            .putExtra(CalendarContract.Events.TITLE, buildCalendarTitle(originalCommand))
+            .putExtra(CalendarContract.Events.DESCRIPTION, originalCommand)
+            .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, startTime.getTimeInMillis())
+            .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endTime.getTimeInMillis())
+            .putExtra(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY);
+
+        try {
+            startActivity(intent);
+            status.setText(String.format(Locale.ROOT, "Otwieram kalendarz, żeby dodać wpis na %02d.%02d.%04d o %02d:%02d.",
+                startTime.get(Calendar.DAY_OF_MONTH),
+                startTime.get(Calendar.MONTH) + 1,
+                startTime.get(Calendar.YEAR),
+                startTime.get(Calendar.HOUR_OF_DAY),
+                startTime.get(Calendar.MINUTE)));
+        } catch (ActivityNotFoundException exception) {
+            status.setText("Nie znalazłem aplikacji kalendarza, która może dodać wydarzenie.");
+        }
+        return true;
+    }
+
+    private Calendar extractCalendarStartTime(String normalizedCommand) {
+        Matcher timeMatcher = Pattern.compile("(?:o\\s*)?(\\d{1,2})(?:[:.](\\d{2}))").matcher(normalizedCommand);
+        if (!timeMatcher.find()) {
+            return null;
+        }
+
+        int hour = Integer.parseInt(timeMatcher.group(1));
+        int minute = Integer.parseInt(timeMatcher.group(2));
+
+        if (hour > 23 || minute > 59) {
+            return null;
+        }
+
+        Calendar startTime = Calendar.getInstance();
+        startTime.setLenient(false);
+        startTime.set(Calendar.SECOND, 0);
+        startTime.set(Calendar.MILLISECOND, 0);
+        startTime.set(Calendar.HOUR_OF_DAY, hour);
+        startTime.set(Calendar.MINUTE, minute);
+
+        if (normalizedCommand.contains("pojutrze")) {
+            startTime.add(Calendar.DAY_OF_YEAR, 2);
+        } else if (normalizedCommand.contains("jutro")) {
+            startTime.add(Calendar.DAY_OF_YEAR, 1);
+        } else {
+            Matcher dateMatcher = Pattern.compile("(\\d{1,2})[.-](\\d{1,2})(?:[.-](\\d{2,4}))?").matcher(normalizedCommand);
+            if (dateMatcher.find()) {
+                int day = Integer.parseInt(dateMatcher.group(1));
+                int month = Integer.parseInt(dateMatcher.group(2));
+                int year = dateMatcher.group(3) == null ? startTime.get(Calendar.YEAR) : Integer.parseInt(dateMatcher.group(3));
+
+                if (year < 100) {
+                    year += 2000;
+                }
+
+                if (month < 1 || month > 12 || day < 1 || day > 31) {
+                    return null;
+                }
+
+                startTime.set(Calendar.YEAR, year);
+                startTime.set(Calendar.MONTH, month - 1);
+                startTime.set(Calendar.DAY_OF_MONTH, day);
+            } else if (!normalizedCommand.contains("dzisiaj") && !normalizedCommand.contains("dziś")) {
+                return null;
+            }
+        }
+
+        try {
+            startTime.getTime();
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+
+        return startTime;
+    }
+
+    private String buildCalendarTitle(String originalCommand) {
+        return originalCommand
+            .replaceFirst("(?i)^(dodaj|utwórz|stwórz|zapisz)\\s+", "")
+            .replaceFirst("(?i)\\s+w kalendarzu.*$", "")
+            .trim();
     }
 
     private boolean trySetAlarm(String originalCommand, String normalizedCommand) {
