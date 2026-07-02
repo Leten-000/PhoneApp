@@ -163,66 +163,167 @@ public class MainActivity extends Activity {
     private void showAskAiDialog() {
         LinearLayout dialogLayout = new LinearLayout(this);
         dialogLayout.setOrientation(LinearLayout.VERTICAL);
-        dialogLayout.setPadding(32, 16, 32, 0);
+        dialogLayout.setPadding(dp(18), dp(14), dp(18), 0);
+        dialogLayout.setBackgroundColor(Color.rgb(2, 6, 23));
+
+        TextView title = new TextView(this);
+        title.setText("Jarvis AI");
+        title.setTextColor(Color.rgb(226, 232, 240));
+        title.setTextSize(24);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setGravity(Gravity.CENTER);
+        title.setPadding(0, 0, 0, dp(4));
+
+        TextView subtitle = new TextView(this);
+        subtitle.setText("Pisz jak na czacie — odpowiedzi pojawią się pod spodem.");
+        subtitle.setTextColor(Color.rgb(148, 163, 184));
+        subtitle.setTextSize(14);
+        subtitle.setGravity(Gravity.CENTER);
+        subtitle.setPadding(0, 0, 0, dp(12));
+
+        LinearLayout chatMessages = new LinearLayout(this);
+        chatMessages.setOrientation(LinearLayout.VERTICAL);
+        chatMessages.setPadding(dp(12), dp(12), dp(12), dp(12));
+
+        ScrollView chatScroll = new ScrollView(this);
+        chatScroll.setFillViewport(true);
+        chatScroll.setBackground(createRoundedBackground(Color.rgb(15, 23, 42), dp(18), Color.rgb(30, 41, 59), 1));
+        chatScroll.addView(chatMessages);
 
         EditText questionInput = new EditText(this);
-        questionInput.setHint("O co chcesz spytać AI?");
+        questionInput.setHint("Napisz wiadomość...");
         questionInput.setSingleLine(false);
-        questionInput.setMinLines(3);
-        questionInput.setTextColor(Color.rgb(15, 23, 42));
+        questionInput.setMinLines(1);
+        questionInput.setMaxLines(4);
+        questionInput.setTextColor(Color.WHITE);
+        questionInput.setHintTextColor(Color.rgb(148, 163, 184));
         questionInput.setTextSize(16);
-        questionInput.setGravity(Gravity.TOP | Gravity.START);
+        questionInput.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+        questionInput.setImeOptions(EditorInfo.IME_ACTION_SEND);
+        questionInput.setPadding(dp(14), dp(10), dp(14), dp(10));
+        questionInput.setBackground(createRoundedBackground(Color.rgb(15, 23, 42), dp(22), Color.rgb(56, 189, 248), 2));
 
-        TextView answerView = new TextView(this);
-        answerView.setText("Wpisz pytanie i naciśnij „Wyślij”. Klucz API jest dodawany podczas budowania aplikacji z sekretu GitHub API_KEY.");
-        answerView.setTextColor(Color.rgb(15, 23, 42));
-        answerView.setTextSize(16);
-        answerView.setPadding(0, 24, 0, 0);
+        Button sendButton = new Button(this);
+        sendButton.setText("Wyślij");
+        sendButton.setAllCaps(false);
+        sendButton.setTextSize(16);
 
-        ScrollView answerScroll = new ScrollView(this);
-        answerScroll.addView(answerView);
+        LinearLayout inputRow = new LinearLayout(this);
+        inputRow.setOrientation(LinearLayout.HORIZONTAL);
+        inputRow.setGravity(Gravity.CENTER_VERTICAL);
+        inputRow.setPadding(0, dp(12), 0, 0);
 
-        dialogLayout.addView(questionInput, new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
+        LinearLayout.LayoutParams questionParams = new LinearLayout.LayoutParams(
+            0,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            1
+        );
+        questionParams.setMargins(0, 0, dp(8), 0);
+        inputRow.addView(questionInput, questionParams);
+        inputRow.addView(sendButton, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
         ));
-        dialogLayout.addView(answerScroll, new LinearLayout.LayoutParams(
+
+        dialogLayout.addView(title);
+        dialogLayout.addView(subtitle);
+        dialogLayout.addView(chatScroll, new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
-            420
+            dp(470)
         ));
+        dialogLayout.addView(inputRow);
+
+        addChatMessage(chatMessages, chatScroll, "Cześć! Jestem gotowy. O co chcesz spytać?", false);
 
         android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
-            .setTitle("Zapytaj AI")
             .setView(dialogLayout)
-            .setPositiveButton("Wyślij", null)
             .setNegativeButton("Zamknij", null)
             .create();
 
+        sendButton.setOnClickListener((buttonView) -> {
+            String question = questionInput.getText().toString().trim();
+
+            if (BuildConfig.API_KEY.isEmpty()) {
+                addChatMessage(chatMessages, chatScroll, "Brakuje sekretu API_KEY w zbudowanej aplikacji. Dodaj API_KEY w GitHub Secrets i poczekaj na nowy APK z GitHub Actions.", false);
+                return;
+            }
+
+            if (question.isEmpty()) {
+                questionInput.setError("Wpisz wiadomość");
+                return;
+            }
+
+            addChatMessage(chatMessages, chatScroll, question, true);
+            questionInput.setText("");
+            TextView pendingAnswer = addChatMessage(chatMessages, chatScroll, "Piszę odpowiedź...", false);
+            sendButton.setEnabled(false);
+            askGemini(question, pendingAnswer, sendButton, chatScroll);
+        });
+
+        questionInput.setOnEditorActionListener((view, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_DONE) {
+                sendButton.performClick();
+                return true;
+            }
+
+            return false;
+        });
+
         dialog.setOnShowListener((dialogInterface) -> {
-            Button sendButton = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE);
-            sendButton.setOnClickListener((buttonView) -> {
-                String question = questionInput.getText().toString().trim();
-
-                if (BuildConfig.API_KEY.isEmpty()) {
-                    answerView.setText("Brakuje sekretu API_KEY w zbudowanej aplikacji. Dodaj API_KEY w GitHub Secrets i poczekaj na nowy APK z GitHub Actions.");
-                    return;
-                }
-
-                if (question.isEmpty()) {
-                    answerView.setText("Najpierw wpisz pytanie do AI.");
-                    return;
-                }
-
-                sendButton.setEnabled(false);
-                answerView.setText("Pytam AI...");
-                askGemini(question, answerView, sendButton);
-            });
+            if (dialog.getWindow() != null) {
+                dialog.getWindow().setBackgroundDrawable(createRoundedBackground(Color.rgb(2, 6, 23), dp(24), Color.rgb(30, 41, 59), 1));
+            }
         });
 
         dialog.show();
     }
 
-    private void askGemini(String question, TextView answerView, Button sendButton) {
+    private TextView addChatMessage(LinearLayout chatMessages, ScrollView chatScroll, String message, boolean fromUser) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(fromUser ? Gravity.END : Gravity.START);
+        row.setPadding(0, dp(4), 0, dp(4));
+
+        TextView bubble = new TextView(this);
+        bubble.setText(message);
+        bubble.setTextColor(fromUser ? Color.rgb(8, 47, 73) : Color.rgb(226, 232, 240));
+        bubble.setTextSize(16);
+        bubble.setLineSpacing(0, 1.08f);
+        bubble.setPadding(dp(14), dp(10), dp(14), dp(10));
+        bubble.setBackground(createRoundedBackground(
+            fromUser ? Color.rgb(56, 189, 248) : Color.rgb(30, 41, 59),
+            dp(18),
+            fromUser ? Color.rgb(125, 211, 252) : Color.rgb(51, 65, 85),
+            1
+        ));
+
+        LinearLayout.LayoutParams bubbleParams = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        bubbleParams.setMargins(fromUser ? dp(48) : 0, 0, fromUser ? 0 : dp(48), 0);
+        row.addView(bubble, bubbleParams);
+        chatMessages.addView(row);
+        scrollChatToBottom(chatScroll);
+        return bubble;
+    }
+
+    private GradientDrawable createRoundedBackground(int color, int radius, int strokeColor, int strokeWidth) {
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(color);
+        background.setCornerRadius(radius);
+        background.setStroke(strokeWidth, strokeColor);
+        return background;
+    }
+
+    private int dp(int value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    private void scrollChatToBottom(ScrollView chatScroll) {
+        chatScroll.post(() -> chatScroll.fullScroll(ScrollView.FOCUS_DOWN));
+    }
+
+    private void askGemini(String question, TextView answerView, Button sendButton, ScrollView chatScroll) {
         new Thread(() -> {
             HttpURLConnection connection = null;
 
@@ -247,14 +348,14 @@ public class MainActivity extends Activity {
                     : readErrorResponse(connection);
 
                 if (responseCode < 200 || responseCode >= 300) {
-                    showAiAnswer(answerView, sendButton, "AI zwróciło błąd (" + responseCode + "). Spróbuj ponownie później.");
+                    showAiAnswer(answerView, sendButton, chatScroll, "AI zwróciło błąd (" + responseCode + "). Spróbuj ponownie później.");
                     return;
                 }
 
                 String answer = parseGeminiAnswer(response);
-                showAiAnswer(answerView, sendButton, answer.isEmpty() ? "AI nie zwróciło odpowiedzi." : answer);
+                showAiAnswer(answerView, sendButton, chatScroll, answer.isEmpty() ? "AI nie zwróciło odpowiedzi." : answer);
             } catch (Exception exception) {
-                showAiAnswer(answerView, sendButton, "Nie udało się połączyć z AI. Sprawdź internet i spróbuj ponownie.");
+                showAiAnswer(answerView, sendButton, chatScroll, "Nie udało się połączyć z AI. Sprawdź internet i spróbuj ponownie.");
             } finally {
                 if (connection != null) {
                     connection.disconnect();
@@ -311,10 +412,11 @@ public class MainActivity extends Activity {
         return answer.toString().trim();
     }
 
-    private void showAiAnswer(TextView answerView, Button sendButton, String answer) {
+    private void showAiAnswer(TextView answerView, Button sendButton, ScrollView chatScroll, String answer) {
         runOnUiThread(() -> {
             answerView.setText(answer);
             sendButton.setEnabled(true);
+            scrollChatToBottom(chatScroll);
         });
     }
 
