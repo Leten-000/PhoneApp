@@ -256,8 +256,12 @@ public class MainActivity extends Activity {
                 return;
             }
 
+            if (!appendChatHistory(chatHistory, "user", question)) {
+                addChatMessage(chatMessages, chatScroll, "Nie udało się przygotować historii rozmowy. Spróbuj ponownie.", false);
+                return;
+            }
+
             addChatMessage(chatMessages, chatScroll, question, true);
-            appendChatHistory(chatHistory, "user", question);
             questionInput.setText("");
             TextView pendingAnswer = addChatMessage(chatMessages, chatScroll, "Piszę odpowiedź...", false);
             sendButton.setEnabled(false);
@@ -343,11 +347,16 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void appendChatHistory(JSONArray chatHistory, String role, String message) {
-        chatHistory.put(createGeminiContent(role, message));
+    private boolean appendChatHistory(JSONArray chatHistory, String role, String message) {
+        try {
+            chatHistory.put(createGeminiContent(role, message));
+            return true;
+        } catch (Exception exception) {
+            return false;
+        }
     }
 
-    private JSONObject createGeminiContent(String role, String message) {
+    private JSONObject createGeminiContent(String role, String message) throws Exception {
         JSONObject textPart = new JSONObject().put("text", message);
         return new JSONObject()
             .put("role", role)
