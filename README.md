@@ -50,7 +50,7 @@ app/build/outputs/apk/release/app-release.apk — w GitHub Actions ten plik jest
 
 ## Wersja PWA
 
-W repozytorium nadal zostają proste pliki PWA (`index.html`, `manifest.webmanifest`, `service-worker.js`). Można ich użyć później, jeśli aplikacja będzie hostowana pod publicznym linkiem.
+W repozytorium nadal zostają proste pliki PWA (`index.html`, `manifest.webmanifest`, `service-worker.js`). Workflow **Build Jarvis PWA files** można uruchomić ręcznie, żeby zbudować je jako artefakt, ale nie wdraża już automatycznie GitHub Pages. Dzięki temu push do repozytorium nie kończy się błędem `deploy-pages` 404, gdy GitHub Pages nie jest włączony dla prywatnego repozytorium.
 
 ## Ważne przy pierwszej aktualizacji po tej poprawce
 
