@@ -6,6 +6,8 @@ def jarvisVersionCode = (project.findProperty('jarvisVersionCode') ?: '1').toStr
 def jarvisKeystorePassword = project.findProperty('jarvisKeystorePassword') ?: 'jarvis-update-key'
 def jarvisKeyAlias = project.findProperty('jarvisKeyAlias') ?: 'jarvis-upload'
 def jarvisKeyPassword = project.findProperty('jarvisKeyPassword') ?: jarvisKeystorePassword
+def jarvisApiKey = (project.findProperty('apiKey') ?: System.getenv('API_KEY') ?: '').toString()
+def escapedJarvisApiKey = jarvisApiKey.replace('\\', '\\\\').replace('"', '\\"')
 
 android {
     namespace 'pl.jarvis'
@@ -17,6 +19,11 @@ android {
         targetSdk 35
         versionCode jarvisVersionCode
         versionName '0.1.0'
+        buildConfigField 'String', 'API_KEY', "\"${escapedJarvisApiKey}\""
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     signingConfigs {

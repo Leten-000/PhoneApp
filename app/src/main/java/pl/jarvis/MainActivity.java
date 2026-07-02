@@ -23,6 +23,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.io.BufferedReader;
@@ -40,6 +41,8 @@ public class MainActivity extends Activity {
     private static final String LATEST_RELEASE_PAGE = "https://github.com/Leten-000/PhoneApp/releases/tag/jarvis-latest";
     private static final String APK_FILE_NAME = "Jarvis.apk";
     private static final String APK_MIME_TYPE = "application/vnd.android.package-archive";
+    private static final String GEMINI_MODEL = "gemini-3.5-flash";
+    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent";
 
     private TextView status;
     private TextView updateStatus;
@@ -94,6 +97,11 @@ public class MainActivity extends Activity {
         runButton.setAllCaps(false);
         runButton.setTextSize(18);
 
+        Button askAiButton = new Button(this);
+        askAiButton.setText("Zapytaj AI");
+        askAiButton.setAllCaps(false);
+        askAiButton.setTextSize(18);
+
         Button updateButton = new Button(this);
         updateButton.setText("Sprawdź aktualizację");
         updateButton.setAllCaps(false);
@@ -114,6 +122,7 @@ public class MainActivity extends Activity {
         updateStatus.setPadding(0, 18, 0, 0);
 
         runButton.setOnClickListener((view) -> handleCommand());
+        askAiButton.setOnClickListener((view) -> showAskAiDialog());
         updateButton.setOnClickListener((view) -> checkForUpdates(true));
         commandInput.setOnEditorActionListener((view, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
@@ -134,6 +143,10 @@ public class MainActivity extends Activity {
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
         ));
+        layout.addView(askAiButton, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
         layout.addView(updateButton, new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
@@ -143,6 +156,165 @@ public class MainActivity extends Activity {
         setContentView(layout);
         registerDownloadReceiver();
         checkForUpdates(false);
+    }
+
+
+    private void showAskAiDialog() {
+        LinearLayout dialogLayout = new LinearLayout(this);
+        dialogLayout.setOrientation(LinearLayout.VERTICAL);
+        dialogLayout.setPadding(32, 16, 32, 0);
+
+        EditText questionInput = new EditText(this);
+        questionInput.setHint("O co chcesz spytać AI?");
+        questionInput.setSingleLine(false);
+        questionInput.setMinLines(3);
+        questionInput.setTextColor(Color.rgb(15, 23, 42));
+        questionInput.setTextSize(16);
+        questionInput.setGravity(Gravity.TOP | Gravity.START);
+
+        TextView answerView = new TextView(this);
+        answerView.setText("Wpisz pytanie i naciśnij „Wyślij”. Klucz API jest dodawany podczas budowania aplikacji z sekretu GitHub API_KEY.");
+        answerView.setTextColor(Color.rgb(15, 23, 42));
+        answerView.setTextSize(16);
+        answerView.setPadding(0, 24, 0, 0);
+
+        ScrollView answerScroll = new ScrollView(this);
+        answerScroll.addView(answerView);
+
+        dialogLayout.addView(questionInput, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ));
+        dialogLayout.addView(answerScroll, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            420
+        ));
+
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+            .setTitle("Zapytaj AI")
+            .setView(dialogLayout)
+            .setPositiveButton("Wyślij", null)
+            .setNegativeButton("Zamknij", null)
+            .create();
+
+        dialog.setOnShowListener((dialogInterface) -> {
+            Button sendButton = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE);
+            sendButton.setOnClickListener((buttonView) -> {
+                String question = questionInput.getText().toString().trim();
+
+                if (BuildConfig.API_KEY.isEmpty()) {
+                    answerView.setText("Brakuje sekretu API_KEY w zbudowanej aplikacji. Dodaj API_KEY w GitHub Secrets i poczekaj na nowy APK z GitHub Actions.");
+                    return;
+                }
+
+                if (question.isEmpty()) {
+                    answerView.setText("Najpierw wpisz pytanie do AI.");
+                    return;
+                }
+
+                sendButton.setEnabled(false);
+                answerView.setText("Pytam AI...");
+                askGemini(question, answerView, sendButton);
+            });
+        });
+
+        dialog.show();
+    }
+
+    private void askGemini(String question, TextView answerView, Button sendButton) {
+        new Thread(() -> {
+            HttpURLConnection connection = null;
+
+            try {
+                JSONObject textPart = new JSONObject().put("text", question);
+                JSONArray parts = new JSONArray().put(textPart);
+                JSONObject content = new JSONObject().put("parts", parts);
+                JSONObject requestBody = new JSONObject().put("contents", new JSONArray().put(content));
+
+                connection = (HttpURLConnection) new URL(GEMINI_API_URL).openConnection();
+                connection.setRequestMethod("POST");
+                connection.setConnectTimeout(15000);
+                connection.setReadTimeout(30000);
+                connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                connection.setRequestProperty("x-goog-api-key", BuildConfig.API_KEY);
+                connection.setDoOutput(true);
+                connection.getOutputStream().write(requestBody.toString().getBytes("UTF-8"));
+
+                int responseCode = connection.getResponseCode();
+                String response = responseCode >= 200 && responseCode < 300
+                    ? readResponse(connection)
+                    : readErrorResponse(connection);
+
+                if (responseCode < 200 || responseCode >= 300) {
+                    showAiAnswer(answerView, sendButton, "AI zwróciło błąd (" + responseCode + "). Spróbuj ponownie później.");
+                    return;
+                }
+
+                String answer = parseGeminiAnswer(response);
+                showAiAnswer(answerView, sendButton, answer.isEmpty() ? "AI nie zwróciło odpowiedzi." : answer);
+            } catch (Exception exception) {
+                showAiAnswer(answerView, sendButton, "Nie udało się połączyć z AI. Sprawdź internet i spróbuj ponownie.");
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+        }).start();
+    }
+
+    private String readErrorResponse(HttpURLConnection connection) throws Exception {
+        if (connection.getErrorStream() == null) {
+            return "";
+        }
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getErrorStream()));
+        StringBuilder builder = new StringBuilder();
+        String line;
+
+        while ((line = reader.readLine()) != null) {
+            builder.append(line);
+        }
+
+        reader.close();
+        return builder.toString();
+    }
+
+    private String parseGeminiAnswer(String json) throws Exception {
+        JSONObject response = new JSONObject(json);
+        JSONArray candidates = response.optJSONArray("candidates");
+        if (candidates == null || candidates.length() == 0) {
+            return "";
+        }
+
+        JSONObject content = candidates.getJSONObject(0).optJSONObject("content");
+        if (content == null) {
+            return "";
+        }
+
+        JSONArray parts = content.optJSONArray("parts");
+        if (parts == null) {
+            return "";
+        }
+
+        StringBuilder answer = new StringBuilder();
+        for (int index = 0; index < parts.length(); index++) {
+            String text = parts.getJSONObject(index).optString("text", "");
+            if (!text.isEmpty()) {
+                if (answer.length() > 0) {
+                    answer.append("\n\n");
+                }
+                answer.append(text);
+            }
+        }
+
+        return answer.toString().trim();
+    }
+
+    private void showAiAnswer(TextView answerView, Button sendButton, String answer) {
+        runOnUiThread(() -> {
+            answerView.setText(answer);
+            sendButton.setEnabled(true);
+        });
     }
 
     @Override
