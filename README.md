@@ -1,6 +1,6 @@
 # Jarvis
 
-Jarvis to minimalna prywatna aplikacja na Androida. Po uruchomieniu pokazuje pole tekstowe, w którym możesz wpisać czynność, np. „nastaw alarm na 7:30”, „minutnik za 10 minut”, „za 30 minut włącz stoper” albo „dodaj wydarzenie jutro o 15:00”.
+Jarvis to minimalna prywatna aplikacja na Androida. Po uruchomieniu pokazuje pole tekstowe, w którym możesz wpisać czynność, np. „nastaw alarm na 7:30”, „minutnik za 10 minut”, „za 30 minut włącz stoper”, „dodaj wydarzenie jutro o 15:00” albo „znajdź mi hulajnogę do 400 zł”.
 
 ## Plik aplikacji do pobrania na telefon
 

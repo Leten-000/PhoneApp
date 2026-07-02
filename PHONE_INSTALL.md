@@ -41,6 +41,7 @@ minutnik za 10 minut
 za 30 minut włącz stoper
 dodaj wydarzenie jutro o 15:00
 dodaj zadanie w kalendarzu na 12.07 o 9:00
+znajdź mi hulajnogę do 400 zł
 ```
 
 ## 4. Jak aktualizować później

@@ -28,6 +28,7 @@ import android.widget.TextView;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.URLEncoder;
 import java.net.URL;
 import java.util.Calendar;
 import java.util.Locale;
@@ -333,6 +334,12 @@ public class MainActivity extends Activity {
             return;
         }
 
+        if (containsWebSearchRequest(normalized)) {
+            if (trySearchWeb(command, normalized)) {
+                return;
+            }
+        }
+
         if (normalized.contains("alarm")) {
             if (trySetAlarm(command, normalized)) {
                 return;
@@ -351,7 +358,62 @@ public class MainActivity extends Activity {
             }
         }
 
-        status.setText("Nie rozumiem jeszcze tego polecenia. Spróbuj: „nastaw alarm na 7:30”, „minutnik za 10 minut”, „dodaj wydarzenie jutro o 15:00” albo „dodaj zadanie w kalendarzu na 12.07 o 9:00”.");
+        status.setText("Nie rozumiem jeszcze tego polecenia. Spróbuj: „nastaw alarm na 7:30”, „minutnik za 10 minut”, „dodaj wydarzenie jutro o 15:00” albo „znajdź mi hulajnogę do 400 zł”.");
+    }
+
+    private boolean containsWebSearchRequest(String normalizedCommand) {
+        return normalizedCommand.startsWith("znajdź")
+            || normalizedCommand.startsWith("znajdz")
+            || normalizedCommand.startsWith("wyszukaj")
+            || normalizedCommand.startsWith("poszukaj")
+            || normalizedCommand.startsWith("sprawdź w internecie")
+            || normalizedCommand.startsWith("sprawdz w internecie")
+            || normalizedCommand.startsWith("szukaj");
+    }
+
+    private boolean trySearchWeb(String originalCommand, String normalizedCommand) {
+        String query = buildSearchQuery(originalCommand, normalizedCommand);
+
+        if (query.isEmpty()) {
+            status.setText("Napisz, czego mam poszukać, np. „znajdź mi hulajnogę do 400 zł”.");
+            return true;
+        }
+
+        try {
+            String encodedQuery = URLEncoder.encode(query, "UTF-8");
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + encodedQuery));
+            startActivity(intent);
+            status.setText("Szukam w internecie: „" + query + "”.");
+        } catch (Exception exception) {
+            status.setText("Nie udało się otworzyć wyszukiwarki internetowej.");
+        }
+
+        return true;
+    }
+
+    private String buildSearchQuery(String originalCommand, String normalizedCommand) {
+        String query = originalCommand.trim();
+        String lowerQuery = normalizedCommand.trim();
+        String[] prefixes = {
+            "sprawdź w internecie",
+            "sprawdz w internecie",
+            "znajdź mi",
+            "znajdz mi",
+            "znajdź",
+            "znajdz",
+            "wyszukaj",
+            "poszukaj",
+            "szukaj"
+        };
+
+        for (String prefix : prefixes) {
+            if (lowerQuery.startsWith(prefix)) {
+                query = query.substring(prefix.length()).trim();
+                break;
+            }
+        }
+
+        return query;
     }
 
     private boolean containsCalendarRequest(String normalizedCommand) {
