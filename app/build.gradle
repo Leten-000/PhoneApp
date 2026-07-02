@@ -3,6 +3,9 @@ plugins {
 }
 
 def jarvisVersionCode = (project.findProperty('jarvisVersionCode') ?: '1').toString().toInteger()
+def jarvisKeystorePassword = project.findProperty('jarvisKeystorePassword') ?: 'jarvis-update-key'
+def jarvisKeyAlias = project.findProperty('jarvisKeyAlias') ?: 'jarvis-upload'
+def jarvisKeyPassword = project.findProperty('jarvisKeyPassword') ?: jarvisKeystorePassword
 
 android {
     namespace 'pl.jarvis'
@@ -14,5 +17,20 @@ android {
         targetSdk 35
         versionCode jarvisVersionCode
         versionName '0.1.0'
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('jarvis-upload-keystore.jks')
+            storePassword jarvisKeystorePassword
+            keyAlias jarvisKeyAlias
+            keyPassword jarvisKeyPassword
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+        }
     }
 }
