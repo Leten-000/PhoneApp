@@ -2,6 +2,8 @@ package pl.jarvis;
 
 import android.app.Activity;
 import android.app.DownloadManager;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -233,6 +235,7 @@ public class MainActivity extends Activity {
         ));
         dialogLayout.addView(inputRow);
 
+        JSONArray chatHistory = new JSONArray();
         addChatMessage(chatMessages, chatScroll, "Cześć! Jestem gotowy. O co chcesz spytać?", false);
 
         android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
@@ -254,10 +257,11 @@ public class MainActivity extends Activity {
             }
 
             addChatMessage(chatMessages, chatScroll, question, true);
+            appendChatHistory(chatHistory, "user", question);
             questionInput.setText("");
             TextView pendingAnswer = addChatMessage(chatMessages, chatScroll, "Piszę odpowiedź...", false);
             sendButton.setEnabled(false);
-            askGemini(question, pendingAnswer, sendButton, chatScroll);
+            askGemini(chatHistory, pendingAnswer, sendButton, chatScroll);
         });
 
         questionInput.setOnEditorActionListener((view, actionId, event) -> {
@@ -301,10 +305,53 @@ public class MainActivity extends Activity {
             LinearLayout.LayoutParams.WRAP_CONTENT
         );
         bubbleParams.setMargins(fromUser ? dp(48) : 0, 0, fromUser ? 0 : dp(48), 0);
-        row.addView(bubble, bubbleParams);
+        if (fromUser) {
+            row.addView(bubble, bubbleParams);
+        } else {
+            LinearLayout botMessage = new LinearLayout(this);
+            botMessage.setOrientation(LinearLayout.VERTICAL);
+            botMessage.addView(bubble, bubbleParams);
+
+            Button copyButton = new Button(this);
+            copyButton.setText("Kopiuj");
+            copyButton.setAllCaps(false);
+            copyButton.setTextSize(12);
+            copyButton.setPadding(dp(8), 0, dp(8), 0);
+            copyButton.setOnClickListener((buttonView) -> {
+                copyMessage(bubble.getText().toString());
+                copyButton.setText("Skopiowano");
+                copyButton.postDelayed(() -> copyButton.setText("Kopiuj"), 1600);
+            });
+
+            LinearLayout.LayoutParams copyParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            copyParams.setMargins(0, dp(4), 0, 0);
+            botMessage.addView(copyButton, copyParams);
+            row.addView(botMessage);
+        }
         chatMessages.addView(row);
         scrollChatToBottom(chatScroll);
         return bubble;
+    }
+
+    private void copyMessage(String message) {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        if (clipboard != null) {
+            clipboard.setPrimaryClip(ClipData.newPlainText("Odpowiedź Jarvisa", message));
+        }
+    }
+
+    private void appendChatHistory(JSONArray chatHistory, String role, String message) {
+        chatHistory.put(createGeminiContent(role, message));
+    }
+
+    private JSONObject createGeminiContent(String role, String message) {
+        JSONObject textPart = new JSONObject().put("text", message);
+        return new JSONObject()
+            .put("role", role)
+            .put("parts", new JSONArray().put(textPart));
     }
 
     private GradientDrawable createRoundedBackground(int color, int radius, int strokeColor, int strokeWidth) {
@@ -323,15 +370,12 @@ public class MainActivity extends Activity {
         chatScroll.post(() -> chatScroll.fullScroll(ScrollView.FOCUS_DOWN));
     }
 
-    private void askGemini(String question, TextView answerView, Button sendButton, ScrollView chatScroll) {
+    private void askGemini(JSONArray chatHistory, TextView answerView, Button sendButton, ScrollView chatScroll) {
         new Thread(() -> {
             HttpURLConnection connection = null;
 
             try {
-                JSONObject textPart = new JSONObject().put("text", question);
-                JSONArray parts = new JSONArray().put(textPart);
-                JSONObject content = new JSONObject().put("parts", parts);
-                JSONObject requestBody = new JSONObject().put("contents", new JSONArray().put(content));
+                JSONObject requestBody = new JSONObject().put("contents", new JSONArray(chatHistory.toString()));
 
                 connection = (HttpURLConnection) new URL(GEMINI_API_URL).openConnection();
                 connection.setRequestMethod("POST");
@@ -353,6 +397,9 @@ public class MainActivity extends Activity {
                 }
 
                 String answer = parseGeminiAnswer(response);
+                if (!answer.isEmpty()) {
+                    appendChatHistory(chatHistory, "model", answer);
+                }
                 showAiAnswer(answerView, sendButton, chatScroll, answer.isEmpty() ? "AI nie zwróciło odpowiedzi." : answer);
             } catch (Exception exception) {
                 showAiAnswer(answerView, sendButton, chatScroll, "Nie udało się połączyć z AI. Sprawdź internet i spróbuj ponownie.");
