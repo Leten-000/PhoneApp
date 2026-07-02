@@ -20,7 +20,7 @@ Po instalacji na ekranie telefonu pojawi się aplikacja **Jarvis** z polem do wp
 
 ## Automatyczne aktualizacje
 
-Po każdym pushu na GitHub workflow buduje nowy podpisany plik `Jarvis.apk` i publikuje go jako release `jarvis-latest`. Każdy kolejny APK jest podpisany tym samym kluczem aplikacji, więc Android może instalować go jako aktualizację bez odinstalowywania poprzedniej wersji. Po uruchomieniu aplikacja sprawdza przez internet, czy w tym release jest nowszy `versionCode`; jeśli tak, otwiera stronę pobierania najnowszego APK. Android nadal wymaga potwierdzenia instalacji APK przez użytkownika, ale Jarvis sam wykrywa dostępność aktualizacji. Gdy nie ma internetu, aplikacja działa dalej w ostatnio zainstalowanej wersji.
+Po każdym pushu na GitHub workflow buduje nowy podpisany plik `Jarvis.apk` i publikuje go jako release `jarvis-latest`. Każdy kolejny APK jest podpisany tym samym kluczem aplikacji, więc Android może instalować go jako aktualizację bez odinstalowywania poprzedniej wersji. Po uruchomieniu aplikacja sprawdza przez internet, czy w tym release jest nowszy `versionCode`; jeśli tak, sam pobiera najnowszy APK i otwiera instalator Androida. Android nadal wymaga potwierdzenia instalacji APK przez użytkownika, ale Jarvis sam wykrywa dostępność aktualizacji. Gdy nie ma internetu, aplikacja działa dalej w ostatnio zainstalowanej wersji.
 
 ## Budowanie lokalne
 

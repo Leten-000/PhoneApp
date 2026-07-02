@@ -1,11 +1,18 @@
 package pl.jarvis;
 
 import android.app.Activity;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.provider.AlarmClock;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
+import android.os.Build;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -27,10 +34,14 @@ import java.util.regex.Pattern;
 public class MainActivity extends Activity {
     private static final String LATEST_RELEASE_API = "https://api.github.com/repos/Leten-000/PhoneApp/releases/tags/jarvis-latest";
     private static final String LATEST_RELEASE_PAGE = "https://github.com/Leten-000/PhoneApp/releases/tag/jarvis-latest";
+    private static final String APK_FILE_NAME = "Jarvis.apk";
+    private static final String APK_MIME_TYPE = "application/vnd.android.package-archive";
 
     private TextView status;
     private TextView updateStatus;
     private EditText commandInput;
+    private long updateDownloadId = -1;
+    private BroadcastReceiver downloadReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,7 +137,17 @@ public class MainActivity extends Activity {
         layout.addView(status);
         layout.addView(updateStatus);
         setContentView(layout);
+        registerDownloadReceiver();
         checkForUpdates(false);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (downloadReceiver != null) {
+            unregisterReceiver(downloadReceiver);
+        }
+
+        super.onDestroy();
     }
 
     private void checkForUpdates(boolean openedByUser) {
@@ -146,12 +167,18 @@ public class MainActivity extends Activity {
                 }
 
                 String json = readResponse(connection);
-                int remoteVersion = extractRemoteVersion(json);
+                ReleaseInfo releaseInfo = parseReleaseInfo(json);
                 int currentVersion = getCurrentVersionCode();
 
-                if (remoteVersion > currentVersion) {
-                    showUpdateMessage("Jest nowsza wersja Jarvisa. Otwieram stronę pobierania APK.");
-                    openLatestReleasePage();
+                if (releaseInfo.versionCode > currentVersion) {
+                    if (releaseInfo.apkUrl.isEmpty()) {
+                        showUpdateMessage("Jest nowsza wersja Jarvisa, ale nie znalazłem pliku APK w release. Otwieram stronę pobierania.");
+                        openLatestReleasePage();
+                        return;
+                    }
+
+                    showUpdateMessage("Jest nowsza wersja Jarvisa. Pobieram aktualizację automatycznie...");
+                    downloadAndInstallUpdate(releaseInfo.apkUrl);
                     return;
                 }
 
@@ -179,8 +206,29 @@ public class MainActivity extends Activity {
         return builder.toString();
     }
 
-    private int extractRemoteVersion(String json) {
-        Matcher matcher = Pattern.compile("versionCode=(\\d+)").matcher(json);
+    private ReleaseInfo parseReleaseInfo(String json) throws Exception {
+        JSONObject release = new JSONObject(json);
+        int versionCode = extractRemoteVersion(release.optString("body", "") + " " + release.optString("name", ""));
+        String apkUrl = "";
+        JSONArray assets = release.optJSONArray("assets");
+
+        if (assets != null) {
+            for (int index = 0; index < assets.length(); index++) {
+                JSONObject asset = assets.getJSONObject(index);
+                String assetName = asset.optString("name", "");
+
+                if (APK_FILE_NAME.equals(assetName) || assetName.toLowerCase(Locale.ROOT).endsWith(".apk")) {
+                    apkUrl = asset.optString("browser_download_url", "");
+                    break;
+                }
+            }
+        }
+
+        return new ReleaseInfo(versionCode, apkUrl);
+    }
+
+    private int extractRemoteVersion(String text) {
+        Matcher matcher = Pattern.compile("versionCode=(\\d+)").matcher(text);
         if (matcher.find()) {
             return Integer.parseInt(matcher.group(1));
         }
@@ -203,6 +251,74 @@ public class MainActivity extends Activity {
 
     private void openLatestReleasePage() {
         runOnUiThread(() -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(LATEST_RELEASE_PAGE))));
+    }
+
+    private void registerDownloadReceiver() {
+        downloadReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                long downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                if (downloadId == updateDownloadId) {
+                    installDownloadedUpdate(downloadId);
+                }
+            }
+        };
+
+        IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(downloadReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(downloadReceiver, filter);
+        }
+    }
+
+    private void downloadAndInstallUpdate(String apkUrl) {
+        runOnUiThread(() -> {
+            try {
+                DownloadManager downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(apkUrl))
+                    .setTitle("Aktualizacja Jarvisa")
+                    .setDescription("Pobieram najnowszy plik APK")
+                    .setMimeType(APK_MIME_TYPE)
+                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                    .setDestinationInExternalFilesDir(this, null, APK_FILE_NAME);
+
+                updateDownloadId = downloadManager.enqueue(request);
+                updateStatus.setText("Pobieram aktualizację. Po pobraniu Android pokaże ekran instalacji — wystarczy zatwierdzić.");
+            } catch (Exception exception) {
+                updateStatus.setText("Nie udało się rozpocząć pobierania aktualizacji. Otwieram stronę pobierania APK.");
+                openLatestReleasePage();
+            }
+        });
+    }
+
+    private void installDownloadedUpdate(long downloadId) {
+        DownloadManager downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+        Uri apkUri = downloadManager.getUriForDownloadedFile(downloadId);
+
+        if (apkUri == null) {
+            showUpdateMessage("Nie udało się znaleźć pobranego APK. Otwieram stronę pobierania.");
+            openLatestReleasePage();
+            return;
+        }
+
+        Intent installIntent = new Intent(Intent.ACTION_VIEW)
+            .setDataAndType(apkUri, APK_MIME_TYPE)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        showUpdateMessage("Aktualizacja pobrana. Otwieram instalator Androida — zatwierdź instalację.");
+        startActivity(installIntent);
+    }
+
+    private static class ReleaseInfo {
+        private final int versionCode;
+        private final String apkUrl;
+
+        private ReleaseInfo(int versionCode, String apkUrl) {
+            this.versionCode = versionCode;
+            this.apkUrl = apkUrl;
+        }
     }
 
     private void handleCommand() {

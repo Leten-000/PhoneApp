@@ -43,7 +43,7 @@ za 30 minut włącz stoper
 
 ## 4. Jak aktualizować później
 
-Po kolejnej zmianie kodu GitHub zbuduje i opublikuje najnowszy podpisany plik `Jarvis.apk` w release `jarvis-latest`. Nowe APK będą podpisywane tym samym kluczem, więc Android powinien pozwolić zainstalować je jako aktualizację bez usuwania aplikacji. Jarvis przy starcie sprawdzi internetem, czy ta wersja jest nowsza, i otworzy stronę pobierania. Bez internetu uruchomi się normalnie ostatnia zainstalowana wersja.
+Po kolejnej zmianie kodu GitHub zbuduje i opublikuje najnowszy podpisany plik `Jarvis.apk` w release `jarvis-latest`. Nowe APK będą podpisywane tym samym kluczem, więc Android powinien pozwolić zainstalować je jako aktualizację bez usuwania aplikacji. Jarvis przy starcie sprawdzi internetem, czy ta wersja jest nowsza, sam pobierze APK i otworzy instalator Androida. Bez internetu uruchomi się normalnie ostatnia zainstalowana wersja.
 
 ## Jeśli Android nadal mówi, że aktualizacja jest niekompatybilna
 
