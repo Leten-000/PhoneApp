@@ -18,6 +18,19 @@ Zamiast tego repozytorium buduje zwykły, podpisany tym samym kluczem plik APK:
 
 Po instalacji na ekranie telefonu pojawi się aplikacja **Jarvis** z polem do wpisywania poleceń.
 
+
+## Sekret API do AI
+
+Żeby przycisk **Zapytaj AI** działał bez wpisywania klucza w aplikacji, dodaj w GitHubie sekret repozytorium o nazwie `API_KEY`:
+
+1. Otwórz repozytorium na GitHubie.
+2. Wejdź w **Settings → Secrets and variables → Actions**.
+3. Kliknij **New repository secret**.
+4. Wpisz nazwę `API_KEY`, wklej swój klucz API i zapisz.
+5. Uruchom ponownie workflow **Build Jarvis APK** albo zrób push nowej wersji.
+
+Nowy APK z GitHub Actions dostanie klucz podczas budowania i nie będzie trzeba wpisywać go na telefonie. Klucz nie jest zapisywany w repozytorium.
+
 ## Automatyczne aktualizacje
 
 Po każdym pushu na GitHub workflow buduje nowy podpisany plik `Jarvis.apk` i publikuje go jako release `jarvis-latest`. Każdy kolejny APK jest podpisany tym samym kluczem aplikacji, więc Android może instalować go jako aktualizację bez odinstalowywania poprzedniej wersji. Po uruchomieniu aplikacja sprawdza przez internet, czy w tym release jest nowszy `versionCode`; jeśli tak, sam pobiera najnowszy APK i otwiera instalator Androida. Android nadal wymaga potwierdzenia instalacji APK przez użytkownika, ale Jarvis sam wykrywa dostępność aktualizacji. Gdy nie ma internetu, aplikacja działa dalej w ostatnio zainstalowanej wersji.
