@@ -42,9 +42,7 @@ public class MainActivity extends Activity {
     private static final String LATEST_RELEASE_PAGE = "https://github.com/Leten-000/PhoneApp/releases/tag/jarvis-latest";
     private static final String APK_FILE_NAME = "Jarvis.apk";
     private static final String APK_MIME_TYPE = "application/vnd.android.package-archive";
-    private static final String AI_SETTINGS_NAME = "jarvis_ai_settings";
-    private static final String AI_API_KEY_PREF = "gemini_api_key";
-    private static final String GEMINI_MODEL = "gemini-1.5-flash";
+    private static final String GEMINI_MODEL = "gemini-3.5-flash";
     private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent";
 
     private TextView status;
@@ -167,14 +165,6 @@ public class MainActivity extends Activity {
         dialogLayout.setOrientation(LinearLayout.VERTICAL);
         dialogLayout.setPadding(32, 16, 32, 0);
 
-        EditText apiKeyInput = new EditText(this);
-        apiKeyInput.setHint("Klucz API Gemini");
-        apiKeyInput.setSingleLine(true);
-        apiKeyInput.setText(getSavedAiApiKey());
-        apiKeyInput.setTextColor(Color.rgb(15, 23, 42));
-        apiKeyInput.setTextSize(16);
-        apiKeyInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-
         EditText questionInput = new EditText(this);
         questionInput.setHint("O co chcesz spytać AI?");
         questionInput.setSingleLine(false);
@@ -184,7 +174,7 @@ public class MainActivity extends Activity {
         questionInput.setGravity(Gravity.TOP | Gravity.START);
 
         TextView answerView = new TextView(this);
-        answerView.setText("Wpisz klucz API, pytanie i naciśnij „Wyślij”. Klucz zapisze się tylko w pamięci tej aplikacji na telefonie.");
+        answerView.setText("Wpisz pytanie i naciśnij „Wyślij”. Klucz API jest dodawany podczas budowania aplikacji z sekretu GitHub API_KEY.");
         answerView.setTextColor(Color.rgb(15, 23, 42));
         answerView.setTextSize(16);
         answerView.setPadding(0, 24, 0, 0);
@@ -192,10 +182,6 @@ public class MainActivity extends Activity {
         ScrollView answerScroll = new ScrollView(this);
         answerScroll.addView(answerView);
 
-        dialogLayout.addView(apiKeyInput, new LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ));
         dialogLayout.addView(questionInput, new LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
             LinearLayout.LayoutParams.WRAP_CONTENT
@@ -215,11 +201,10 @@ public class MainActivity extends Activity {
         dialog.setOnShowListener((dialogInterface) -> {
             Button sendButton = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE);
             sendButton.setOnClickListener((buttonView) -> {
-                String apiKey = apiKeyInput.getText().toString().trim();
                 String question = questionInput.getText().toString().trim();
 
-                if (apiKey.isEmpty()) {
-                    answerView.setText("Najpierw wpisz klucz API Gemini. Ze względów bezpieczeństwa nie zapisuję go w kodzie repozytorium.");
+                if (BuildConfig.API_KEY.isEmpty()) {
+                    answerView.setText("Brakuje sekretu API_KEY w zbudowanej aplikacji. Dodaj API_KEY w GitHub Secrets i poczekaj na nowy APK z GitHub Actions.");
                     return;
                 }
 
@@ -228,28 +213,16 @@ public class MainActivity extends Activity {
                     return;
                 }
 
-                saveAiApiKey(apiKey);
                 sendButton.setEnabled(false);
                 answerView.setText("Pytam AI...");
-                askGemini(apiKey, question, answerView, sendButton);
+                askGemini(question, answerView, sendButton);
             });
         });
 
         dialog.show();
     }
 
-    private String getSavedAiApiKey() {
-        return getSharedPreferences(AI_SETTINGS_NAME, Context.MODE_PRIVATE).getString(AI_API_KEY_PREF, "");
-    }
-
-    private void saveAiApiKey(String apiKey) {
-        getSharedPreferences(AI_SETTINGS_NAME, Context.MODE_PRIVATE)
-            .edit()
-            .putString(AI_API_KEY_PREF, apiKey)
-            .apply();
-    }
-
-    private void askGemini(String apiKey, String question, TextView answerView, Button sendButton) {
+    private void askGemini(String question, TextView answerView, Button sendButton) {
         new Thread(() -> {
             HttpURLConnection connection = null;
 
@@ -264,7 +237,7 @@ public class MainActivity extends Activity {
                 connection.setConnectTimeout(15000);
                 connection.setReadTimeout(30000);
                 connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-                connection.setRequestProperty("x-goog-api-key", apiKey);
+                connection.setRequestProperty("x-goog-api-key", BuildConfig.API_KEY);
                 connection.setDoOutput(true);
                 connection.getOutputStream().write(requestBody.toString().getBytes("UTF-8"));
 

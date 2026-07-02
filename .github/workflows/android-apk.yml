@@ -36,6 +36,8 @@ jobs:
         run: base64 --decode app/jarvis-upload-keystore.jks.base64 > app/jarvis-upload-keystore.jks
 
       - name: Build signed APK
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
         run: gradle :app:assembleRelease -PjarvisVersionCode=${{ github.run_number }}
 
       - name: Prepare phone download file
