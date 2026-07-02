@@ -39,8 +39,15 @@ Po uruchomieniu zobaczysz pole wpisywania poleceń. Przykłady:
 nastaw alarm na 7:30
 minutnik za 10 minut
 za 30 minut włącz stoper
+dodaj wydarzenie jutro o 15:00
+dodaj zadanie w kalendarzu na 12.07 o 9:00
+znajdź mi hulajnogę do 400 zł
 ```
 
 ## 4. Jak aktualizować później
 
-Po kolejnej zmianie kodu GitHub zbuduje i opublikuje najnowszy plik `Jarvis.apk` w release `jarvis-latest`. Jarvis przy starcie sprawdzi internetem, czy ta wersja jest nowsza, i otworzy stronę pobierania. Bez internetu uruchomi się normalnie ostatnia zainstalowana wersja.
+Po kolejnej zmianie kodu GitHub zbuduje i opublikuje najnowszy podpisany plik `Jarvis.apk` w release `jarvis-latest`. Nowe APK będą podpisywane tym samym kluczem, więc Android powinien pozwolić zainstalować je jako aktualizację bez usuwania aplikacji. Jarvis przy starcie sprawdzi internetem, czy ta wersja jest nowsza, sam pobierze APK i otworzy instalator Androida. Bez internetu uruchomi się normalnie ostatnia zainstalowana wersja.
+
+## Jeśli Android nadal mówi, że aktualizacja jest niekompatybilna
+
+To może dotyczyć tylko przejścia ze starego APK zbudowanego jako `debug`. Taki plik mógł mieć inny podpis niż nowy stały APK. Odinstaluj starą wersję jeden ostatni raz, zainstaluj aktualny `Jarvis.apk`, a następne aktualizacje powinny instalować się już normalnie.
